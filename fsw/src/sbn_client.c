@@ -48,7 +48,7 @@ void SendSubToSbn(int SubType, CFE_SB_MsgId_t MsgID,
     char Buf[SBN_PACKED_SUB_SZ] = {0};
     Pack_t Pack;
     Pack_Init(&Pack, Buf, SBN_PACKED_SUB_SZ, 0);
-    Pack_Int16(&Pack, 67); //KB: Size?
+    Pack_Int16(&Pack, SBN_IDENT_LEN + 8); /* payload size: IDENT(48) + SubCnt(2) + MsgID(4) + QoS(2) = 56; MsgSz is payload-only, not total */
     Pack_UInt8(&Pack, SubType);
     Pack_UInt32(&Pack, 2); // cpuID
     // Pack_UInt32(&Pack, 0x42); // spacecraft ID
