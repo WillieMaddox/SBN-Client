@@ -67,10 +67,13 @@ int32 check_pthread_create_status(int status, int32 errorId)
 
 /* message_entry_point determines which slot a new message enters the pipe.
  * the mod allows it to go around the bend easily, i.e. 2 + 4 % 5 = 1, 
- * slots 2,3,4,0 are taken so 1 is entry */
-int message_entry_point(CFE_SBN_Client_PipeD_t pipe)
+ * slots 2,3,4,0 are taken so 1 is entry.
+ * Takes a pointer: the descriptor embeds the whole message ring
+ * (MAX_PIPE_DEPTH x MAX_MESSAGE_SIZE, ~1 MiB), which by value was copied
+ * onto the stack for every ingested message while holding receive_mutex. */
+int message_entry_point(const CFE_SBN_Client_PipeD_t *pipe)
 {
-    return (pipe.ReadMessage + pipe.NumberOfMessages) % 
+    return (pipe->ReadMessage + pipe->NumberOfMessages) % 
         CFE_PLATFORM_SBN_CLIENT_MAX_PIPE_DEPTH;
 }
 

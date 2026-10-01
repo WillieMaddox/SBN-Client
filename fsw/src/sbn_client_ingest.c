@@ -80,7 +80,7 @@ void ingest_app_message(int SockFd, SBN_MsgSz_t MsgSz)
                     {    
                         log_message("App message received: MsgId 0x%08X", MsgId);
                         
-                        memcpy(PipeTbl[i].Messages[message_entry_point(PipeTbl[i])], msg_buffer, MsgSz);
+                        memcpy(PipeTbl[i].Messages[message_entry_point(&PipeTbl[i])], msg_buffer, MsgSz);
                         PipeTbl[i].NumberOfMessages++;
                         
                         pthread_mutex_unlock(&receive_mutex);

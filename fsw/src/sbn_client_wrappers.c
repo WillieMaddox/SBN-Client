@@ -269,8 +269,21 @@ int32 __wrap_CFE_SB_ReceiveBuffer(CFE_SB_Buffer_t **BufPtr, CFE_SB_PipeId_t Pipe
         lock_mutex_status = pthread_mutex_lock(&receive_mutex);
         
         /* Number of messages must be 2 or more otherwise no new messages are
-         * in the pipe */
-        if (pipe->NumberOfMessages < 2 && lock_mutex_status == 0)
+         * in the pipe.
+         *
+         * Re-check after every wakeup (while, not if). A wakeup does not mean
+         * a message is waiting: ingest signals AFTER unlocking, so a signal
+         * for a message this reader already took without waiting can arrive
+         * once it is back in the wait, and condition waits may also wake
+         * spuriously. Proceeding anyway drops NumberOfMessages to 0, so the
+         * reader is handed a stale slot from the previous lap AND the next
+         * ingest writes into that same slot while the caller is still
+         * reading it -- one packet's header decoded with another packet's
+         * payload, and the incoming packet is never delivered on its own.
+         * The deadline is fixed from enter_time, so looping keeps the
+         * caller's total timeout. */
+        while (pipe->NumberOfMessages < 2 && lock_mutex_status == 0 &&
+               status == CFE_SUCCESS && wait_mutex_status == 0)
         {
             
             if (TimeOut == CFE_SB_POLL)
@@ -304,9 +317,9 @@ int32 __wrap_CFE_SB_ReceiveBuffer(CFE_SB_Buffer_t **BufPtr, CFE_SB_PipeId_t Pipe
                                                            &future_timeout);
                   
             } /* end if */
-            
-        } /* end if */
-        
+
+        } /* end while */
+
         if (lock_mutex_status == 0)
         {
             
